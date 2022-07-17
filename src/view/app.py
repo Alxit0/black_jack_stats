@@ -11,9 +11,40 @@ class Card:
 	def __init__(self, value, suit) -> None:
 		self.value = value
 		self.suit = suit
+		self.widget: tk.Button
 	
-	def __str__(self) -> str:
-		return f"{self.value}{self.suits[self.suit]}"
+	def construct(self, master):
+		obj = tk.Button(master, width=2, height=1,
+			text=f"{self.value}{self.suits[self.suit]}", font='Helvetica 12',
+			command=self._destroy)
+		
+		self.widget = obj
+		return obj
+	
+	def _destroy(self):
+		if self.widget is None:
+			return
+		
+		self.widget.destroy()
+
+class Deck:
+	values = ['A'] + list(range(2, 11)) + [*'DJK']
+	suits = 'hdcs'
+
+	def __init__(self) -> None:
+		pass
+	
+	def construct(self, master, *, bg="white") -> tk.Frame:
+		base = tk.Frame(master, bg=bg)
+
+		for i in range(13):
+			for j in range(4):
+				# create card and place it
+				Card(self.values[i], self.suits[j]).construct(base).grid(column=j, row=i)
+		
+		return base
+
+
 
 class App:
 	def __init__(self, *, side_menu_width=200) -> None:
@@ -41,12 +72,5 @@ class App:
 		self.root.mainloop()
 	
 	def add_cards(self):
-		values = ['A'] + list(range(2, 11)) + [*'DVK']
-		for i in range(len(values)):
-			for j in range(4):
-				temp: tk.Button
-				temp = tk.Button(self.side_menu,
-					text=str(Card(values[i],'hdcs'[j])),
-					width=2, height=1, font='Helvetica 12')
-				temp['command'] = temp.destroy
-				temp.grid(column=j, row=i)
+		deck = Deck().construct(self.side_menu, bg=self.side_menu['bg'])
+		deck.place(anchor=tk.CENTER, relx=.5, rely=.5)
