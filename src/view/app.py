@@ -10,19 +10,18 @@ class Card:
 	}
 
 	def __init__(self, value=None, suit=None) -> None:
-		self.value = value
+		self.value = str(value)
 		self.suit = suit
 
-		self.text = '?'
+		self.text = self._string_format()
 		self._widget = tk.Button
 	
 	def construct(self, master, command=None, *, width=2, height=1):
 		color: str
 		if self.suit is None or self.value is None:
-			color = "blue"
+			color = "blue" 
 		else:
 			color = ["red", "black"][self.suit in 'cs']
-			self.update_text()
 	
 		temp = tk.Button(master ,width=width, height=height, 
 					font="Helvica 12", fg=color,
@@ -38,38 +37,77 @@ class Card:
 			width=2, height=2, font="Helvica 12"
 		)
 	
-	def update_text(self):
-		self.text = f"{self.value}{self.suits_prety[self.suit]}"
-
 	def destroy(self):
 		self._widget.destroy()
+
+	def _string_format(self):
+		if self.value is None or self.suit is None:
+			return '?'
+		
+		return f"{self.value}{self.suits_prety[self.suit]}"
+
+class Stats:
+	def __init__(self, hand) -> None:
+		self.hand: Hand = None
+		self.score = 0
+	
+	def construct(self, master):
+		base = tk.Frame(master, bg="#2f2f2f", width=200)
+
+		self.score = tk.IntVar(base, value=0)
+		tk.Label(base, textvariable=self.score)\
+			.place(relx=.5, rely=.5)
+
+		return base
+	
+	def increase(self, value:str):
+		cur_value = self.score.get()
+
+		if value == 'A':
+			value = [1, 11][cur_value < 11]
+		elif value.isalpha():
+			value = 10
+		else:
+			value = int(value)
+
+		self.score.set(cur_value + value)
 
 class Hand:
 	def __init__(self) -> None:
 		self.cards = []
+		self.stats_base = Stats(self)
 		self.card_base: tk.Frame = None
 	
 	def construct(self, master, main_app):
 		base = tk.Frame(master, bg="#0f0f0f")
-
-		self.card_base = tk.Frame(base, bg="#0f0f0f")
-
+		
 		# butao para selecionar a hand ativa
 		tk.Button(base, width=2,
 			command=lambda: main_app.set_active_hand(self)
-		).place(x=10, rely=.5, anchor=tk.W)
-
+		).pack(side=tk.LEFT, padx=5, anchor=tk.CENTER)
+			# .place(x=10, rely=.5, anchor=tk.W)
+		
+		# onde vao ficar as cartas
+		temp = tk.Frame(base, bg=base['bg'])
+		self.card_base = tk.Frame(temp, bg="#0f0f0f")
 		self.card_base.place(relx=.5, rely=.5, anchor=tk.CENTER)
+		temp.pack(side=tk.LEFT, pady=5, fill=tk.BOTH, expand=True)
+
+		# onde se vai mostrar os stats
+		self.stats_base.construct(base)\
+			.pack(side=tk.RIGHT, anchor=tk.E, fill=tk.Y, padx=10, pady=5)
 
 		return base
 	
 	def add_card(self, card:Card):
-		print(self.cards)
+		# print(self.cards)
 		self.cards.append(card)
 
 		if self.card_base is None:
 			return
 		
+		self.stats_base.increase(card.value)
+
 		card.construct_display(self.card_base)\
 			.pack(side=tk.LEFT, padx=2)
 
@@ -150,9 +188,12 @@ class App:
 		if self.active_hand is None:
 			return
 		
-		card.destroy()
-		self.active_hand.add_card(card)
+		if self.active_hand.stats_base.score.get() >= 21:
+			return
 
+		self.active_hand.add_card(card)
+		card.destroy()
+		
 	def run(self):
 		root = self.construct()
 		root.mainloop()
