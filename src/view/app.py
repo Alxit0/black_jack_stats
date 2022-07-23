@@ -49,14 +49,21 @@ class Card:
 class Stats:
 	def __init__(self, hand) -> None:
 		self.hand: Hand = None
-		self.score = 0
+		
+		self.score: tk.IntVar
+		self.hit_sucess: tk.DoubleVar
 	
 	def construct(self, master):
 		base = tk.Frame(master, bg="#2f2f2f", width=200)
+		base.pack_propagate(False)
 
 		self.score = tk.IntVar(base, value=0)
-		tk.Label(base, textvariable=self.score)\
-			.place(relx=.5, rely=.5)
+		# tk.Label(base, textvariable=self.score,
+		# bg=base['bg'], fg='white'
+		# ).pack(pady=10)
+
+		self._construct_stat(base, "Score: ", self.score
+		).pack(pady=10, fill=tk.X, padx=20)
 
 		return base
 	
@@ -72,11 +79,28 @@ class Stats:
 
 		self.score.set(cur_value + value)
 
+	@staticmethod
+	def _construct_stat(master, name:str, variable:tk.Variable):
+		base = tk.Frame(master, bg=master['bg'])
+
+		tk.Label(base, text=name,
+			bg=master['bg'], fg='white'
+		).pack(side=tk.LEFT)
+
+		tk.Label(base, textvariable=variable,
+			bg=master['bg'], fg='white'
+		).pack(side=tk.LEFT)
+
+		return base
+
 class Hand:
 	def __init__(self) -> None:
 		self.cards = []
 		self.stats_base = Stats(self)
 		self.card_base: tk.Frame = None
+
+		self._widget: tk.Frame
+		self._widget_cards: tk.Frame
 	
 	def construct(self, master, main_app):
 		base = tk.Frame(master, bg="#0f0f0f")
@@ -89,7 +113,7 @@ class Hand:
 		
 		# onde vao ficar as cartas
 		temp = tk.Frame(base, bg=base['bg'])
-		self.card_base = tk.Frame(temp, bg="#0f0f0f")
+		self.card_base = tk.Frame(temp, bg=base['bg'])
 		self.card_base.place(relx=.5, rely=.5, anchor=tk.CENTER)
 		temp.pack(side=tk.LEFT, pady=5, fill=tk.BOTH, expand=True)
 
@@ -97,6 +121,8 @@ class Hand:
 		self.stats_base.construct(base)\
 			.pack(side=tk.RIGHT, anchor=tk.E, fill=tk.Y, padx=10, pady=5)
 
+		self._widget = base
+		self._widget_cards = temp
 		return base
 	
 	def add_card(self, card:Card):
@@ -110,6 +136,13 @@ class Hand:
 
 		card.construct_display(self.card_base)\
 			.pack(side=tk.LEFT, padx=2)
+
+	def change_bg(self, new_bg):
+		self._widget['bg'] = new_bg
+		self.card_base['bg'] = new_bg
+		self._widget_cards['bg'] = new_bg
+
+
 
 class GameArea:
 	def __init__(self, main_app) -> None:
@@ -180,9 +213,16 @@ class App:
 
 		return root
 	
-	def set_active_hand(self, hand):
+	def set_active_hand(self, hand:Hand):
+		if self.active_hand is not None:
+			self.active_hand.change_bg("#0f0f0f")
+		
+		if self.active_hand is hand:
+			self.active_hand = None
+			return
+		
 		self.active_hand = hand
-		print("[DEBUG] Active hand set")
+		self.active_hand.change_bg("#1f1f1f")
 
 	def add_card(self, card:Card):
 		if self.active_hand is None:
